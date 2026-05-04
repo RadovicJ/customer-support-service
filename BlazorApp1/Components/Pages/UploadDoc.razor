@@ -1,0 +1,38 @@
+﻿@page "/upload"
+@inject Services.UploadService UploadService
+@inject Services.SearchService SearchService
+@rendermode InteractiveServer
+
+<h3>Dodavanje Dokumenata</h3>
+
+<InputFile OnChange="HandleFileSelected" />
+<button @onclick="UploadFile">Dodaj</button>
+<p>@status</p>
+
+@code {
+    private IBrowserFile selectedFile;
+    private string status;
+
+    private void HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+    }
+
+    private async Task UploadFile()
+    {
+        if (selectedFile != null)
+        {
+            status = "Dodavanje...";
+            using var stream = selectedFile.OpenReadStream();
+            var fileName = selectedFile.Name;
+
+            UploadService.UploadFileAsync(stream, fileName, SearchService);
+            status = "Dokument je dodat";
+        }
+        else
+        {
+            status = "Izaberite Dokument.";
+        }
+    }
+}
+

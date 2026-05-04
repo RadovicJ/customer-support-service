@@ -1,0 +1,81 @@
+﻿@page "/change"
+@rendermode InteractiveServer
+@inject Services.SearchService SearchService
+@using DTO;
+
+<h3>Ažuriranje Dokumenata</h3>
+
+@if (documents != null && documents.Any())
+{
+    <select @bind="selectedDocumentId">
+        <option value="">-- Izaberi Dokument --</option>
+        @foreach (var doc in documents)
+        {
+            <option value="@doc.Id">@doc.Title</option>
+        }
+    </select>
+}
+else
+{
+    <p>Učitavanje dokumenata...</p>
+}
+
+@if (!string.IsNullOrEmpty(selectedDocumentId))
+{
+    <div>
+        <label for="newTitle">Novi naslov:</label>
+        <input id="newTitle" @bind="newTitle" placeholder="Naslov" />
+
+        <button @onclick="UpdateDocumentTitle">Ažuriraj naslov</button>
+        <br />
+        <label for="tags">Novi tagovi:</label>
+        <input @bind="newTags" placeholder="Tagove razdvojite zarezom" />
+
+        <button @onclick="UpdateTags">Ažuriraj tagove</button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(updateStatus))
+{
+    <p>@updateStatus</p>
+}
+
+@code {
+    private IEnumerable<DocumentDTO> documents;
+    private string selectedDocumentId;
+    private string newTitle;
+    private string newTags;
+    private string updateStatus;
+
+    protected override async Task OnInitializedAsync()
+    {
+        documents = await SearchService.GetAllDocumentsAsync();
+    }
+
+    private async Task UpdateDocumentTitle()
+    {
+        if (!string.IsNullOrEmpty(selectedDocumentId) && !string.IsNullOrEmpty(newTitle))
+        {
+            await SearchService.UpdateDocumentTitleAsync(selectedDocumentId, newTitle);
+            updateStatus = "Naslov je ažuriran!";
+        }
+        else
+        {
+            updateStatus = "Izaberite Dokument ili unesite naslov.";
+        }
+    }
+
+    private async Task UpdateTags()
+    {
+        if (!string.IsNullOrEmpty(selectedDocumentId) && !string.IsNullOrEmpty(newTags))
+        {
+            var tagList = newTags.Split(',').Select(tag => tag.Trim()).ToList();
+            await SearchService.UpdateDocumentTagsAsync(selectedDocumentId, tagList);
+            updateStatus = "Tagovi su ažurirani!";
+        }
+        else
+        {
+            updateStatus = "Izaberite Dokument ili unesite tagove.";
+        }
+    }
+}

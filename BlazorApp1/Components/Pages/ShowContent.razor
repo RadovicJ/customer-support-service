@@ -1,0 +1,78 @@
+﻿@page "/show"
+@inject Services.SearchService SearchService
+@rendermode InteractiveServer
+
+@using Azure;
+@using Azure.Search.Documents;
+@using Azure.Search.Documents.Models;
+@using System.Collections.Generic;
+@using System.Threading;
+@using System.Threading.Tasks;
+@using Radzen;
+@using Radzen.Blazor;
+@using DTO;
+
+<h3>Pretraga Dokumenata</h3>
+
+<input @bind="searchText" @oninput="OnInputChanged" placeholder="Pretraži" />
+
+<ul>
+    @if (documents != null)
+    {
+        if (documents.Any())
+        {
+            foreach (var doc in documents)
+            {
+                <li>
+                    <a href="@doc.PdfUrl" target="_blank">@doc.Title</a>
+                </li>
+            }
+        }
+        else
+        {
+            <li>Nema rezultata.</li>
+        }
+    }
+    else
+    {
+        <li>Kucajte za pretragu...</li>
+    }
+</ul>
+
+
+
+@code {
+    private string searchText = string.Empty;
+    private IEnumerable<DocumentDTO> documents;
+    private Timer searchTimer;
+
+    private async void OnInputChanged(ChangeEventArgs e)
+    {
+        searchText = e.Value.ToString();
+        searchTimer?.Change(1000, Timeout.Infinite);
+    }
+
+    private async void PerformSearch(object state)
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            documents = await SearchService.GetAllDocumentsAsync();
+        }
+        else
+        {
+            documents = await SearchService.SearchDocumentsAsync(searchText);
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    protected override void OnInitialized()
+    {
+        searchTimer = new Timer(PerformSearch, null, Timeout.Infinite, Timeout.Infinite);
+    }
+
+    public void Dispose()
+    {
+        searchTimer?.Dispose();
+    }
+}
